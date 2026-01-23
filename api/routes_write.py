@@ -14,7 +14,6 @@ def handle_post(handler, transactions):
     try:
         data = read_json(handler)
 
-        # Validate required fields
         required = ["type", "amount", "sender", "receiver", "timestamp"]
         for field in required:
             if field not in data:
@@ -31,7 +30,7 @@ def handle_post(handler, transactions):
         transactions.append(data)
 
         # Return created transaction
-        handler.send_response(201)  # Created
+        handler.send_response(201)  
         handler.send_header("Content-Type", "application/json")
         handler.end_headers()
         handler.wfile.write(json.dumps(data).encode())
@@ -52,18 +51,16 @@ def handle_put(handler, transactions):
         transaction_id = int(handler.path.split("/")[-1])
         data = read_json(handler)
 
-        # Find transaction by ID
         for t in transactions:
             if t["id"] == transaction_id:
                 t.update(data)
 
-                handler.send_response(200)  # OK
+                handler.send_response(200)  
                 handler.send_header("Content-Type", "application/json")
                 handler.end_headers()
                 handler.wfile.write(json.dumps(t).encode())
                 return
 
-        # If not found
         handler.send_response(404)
         handler.end_headers()
         handler.wfile.write(b"Transaction not found")
