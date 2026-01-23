@@ -2,7 +2,7 @@
 
 URL="http://localhost:8000/transactions"
 
-# POST: create a new transaction
+# POST
 curl -X POST $URL \
 -H "Content-Type: application/json" \
 -d '{
@@ -15,7 +15,7 @@ curl -X POST $URL \
 
 echo -e "\n"
 
-# PUT: transaction updated
+# PUT
 curl -X PUT $URL/1 \
 -H "Content-Type: application/json" \
 -d '{"amount":8000}'
