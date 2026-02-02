@@ -40,7 +40,7 @@ def handle_post(handler, transactions):
         handler.end_headers()
         handler.wfile.write(f"Error: {str(e)}".encode())
 
-# PUT /transactions/{id}
+# PUT
 def handle_put(handler, transactions):
     if not handler.path.startswith("/transactions/"):
         handler.send_response(404)
