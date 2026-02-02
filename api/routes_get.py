@@ -1,65 +1,87 @@
 #!/usr/bin/env python3
-"""GET Routes for MoMo SMS Transaction API"""
-
 import json
-from typing import Dict, List, Any, Optional, Tuple
-from urllib.parse import urlparse
+import sys
+import os
 
-class GetRoutes:
-    def __init__(self, transactions: List[Dict[str, Any]]):
-        self.transactions = transactions
-        self.transactions_dict = {t['id']: t for t in transactions if t.get('id')}
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from dsa.search_dict import dict_search
+
+def handle_get_all_transactions(handler, transactions):
+    """
+    GET /transactions
+    Return all transactions
     
-    def handle_get_request(self, path: str) -> Tuple[int, Dict[str, Any]]:
-        """
-        Handle GET requests and return (status_code, response_data)
-        """
-        parsed_url = urlparse(path)
-        route_path = parsed_url.path
-        
-        # Route: GET /transactions
-        if route_path == '/transactions':
-            return self._get_all_transactions()
-        
-        # Route: GET /transactions/{id}
-        elif route_path.startswith('/transactions/') and len(route_path.split('/')) == 3:
-            transaction_id = route_path.split('/')[-1]
-            return self._get_transaction_by_id(transaction_id)
-        
-        # Route not found
-        else:
-            return 404, {"error": "Endpoint not found"}
+    Args:
+        handler: HTTP request handler
+        transactions: List of all transactions
+    """
+    handler.send_response(200)
+    handler.send_header('Content-Type', 'application/json')
+    handler.end_headers()
     
-    def _get_all_transactions(self) -> Tuple[int, Dict[str, Any]]:
-        """
-        GET /transactions - Return all transactions
-        Returns: (200, {"data": transactions})
-        """
-        return 200, {
-            "data": self.transactions,
-            "count": len(self.transactions),
-            "message": f"Retrieved {len(self.transactions)} transactions"
-        }
+    response = {
+        'success': True,
+        'count': len(transactions),
+        'data': transactions
+    }
     
-    def _get_transaction_by_id(self, transaction_id: str) -> Tuple[int, Dict[str, Any]]:
-        """
-        GET /transactions/{id} - Return specific transaction
-        Returns: (200, {"data": transaction}) or (404, {"error": "..."})
-        """
-        transaction = self.transactions_dict.get(transaction_id)
+    handler.wfile.write(json.dumps(response, indent=2).encode())
+
+def handle_get_transaction_by_id(handler, transaction_id, transaction_dict):
+    """
+    GET /transactions/{id}
+    Return single transaction by ID
+    
+    Args:
+        handler: HTTP request handler
+        transaction_id: ID to search for
+        transaction_dict: Dictionary of transactions
+    """
+    try:
+        tid = int(transaction_id)
+        transaction = dict_search(transaction_dict, tid)
         
         if transaction:
-            return 200, {
-                "data": transaction,
-                "message": f"Transaction {transaction_id} found"
+            handler.send_response(200)
+            handler.send_header('Content-Type', 'application/json')
+            handler.end_headers()
+            
+            response = {
+                'success': True,
+                'data': transaction
             }
+            
+            handler.wfile.write(json.dumps(response, indent=2).encode())
         else:
-            return 404, {
-                "error": "Transaction not found",
-                "message": f"Transaction with ID '{transaction_id}' does not exist"
-            }
+            send_404(handler, f"Transaction with ID {tid} not found")
     
-    def update_transactions(self, transactions: List[Dict[str, Any]]):
-        """Update the transactions data"""
-        self.transactions = transactions
-        self.transactions_dict = {t['id']: t for t in transactions if t.get('id')}
+    except ValueError:
+        send_400(handler, "Invalid transaction ID format")
+
+def send_404(handler, message):
+    """Send 404 Not Found response"""
+    handler.send_response(404)
+    handler.send_header('Content-Type', 'application/json')
+    handler.end_headers()
+    
+    response = {
+        'success': False,
+        'error': message
+    }
+    
+    handler.wfile.write(json.dumps(response, indent=2).encode())
+
+def send_400(handler, message):
+    """Send 400 Bad Request response"""
+    handler.send_response(400)
+    handler.send_header('Content-Type', 'application/json')
+    handler.end_headers()
+    
+    response = {
+        'success': False,
+        'error': message
+    }
+    
+    handler.wfile.write(json.dumps(response, indent=2).encode())
